@@ -3,13 +3,13 @@ package frc.robot.commands.controls;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 
 public class HapticController {
-	private final XboxController controller;
+	private final GenericHID controller;
 	
-	public HapticController(XboxController controller) {
+	public HapticController(GenericHID controller) {
 		this.controller = controller;
 	}
 	
