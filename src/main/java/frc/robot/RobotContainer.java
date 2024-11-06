@@ -32,6 +32,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import frc.robot.commands.MechanismCommands;
+import frc.robot.commands.controls.HapticController;
 import frc.robot.commands.drivetrain.AimAtTag;
 import frc.robot.commands.drivetrain.LockWheelsState;
 import frc.robot.commands.drivetrain.TurnToTag;
@@ -86,6 +87,11 @@ public class RobotContainer {
 	private final CommandXboxController operatorControllerCommands = new CommandXboxController(OperatorConstants.OPERATOR_CONTROLLER_PORT);
 	private final XboxController driverController = driverControllerCommands.getHID();
 	private final XboxController operatorController = operatorControllerCommands.getHID();
+	private final HapticController driverHapticController = new HapticController(driverController);
+	private final HapticController operatorHapticController = new HapticController(operatorController);
+	
+	private final MechanismCommands mechanismCommands = new MechanismCommands(driverHapticController, operatorHapticController);
+	
 	private double speedMultiplier = SwerveConstants.REGULAR_SPEED;
 	// private final Vision vision = new Vision();
 	private final Drivetrain drivetrain = new Drivetrain(/* vision */);
@@ -112,13 +118,13 @@ public class RobotContainer {
 		NamedCommands.registerCommand("turnTo0", pointAwayFromSpeaker());
 		NamedCommands.registerCommand("IntakeGround", MechanismCommands.IntakeGround(arm, head, false));
 		NamedCommands.registerCommand("ShootSpeaker", MechanismCommands.AutonomousShoot(arm, head, drivetrain));
-		NamedCommands.registerCommand("shootAmp", MechanismCommands.AutonomousShoot(arm, head, ShootingPosition.AMP));
+		NamedCommands.registerCommand("shootAmp", mechanismCommands.AutonomousShoot(arm, head, ShootingPosition.AMP));
 		NamedCommands.registerCommand("Stow", MechanismCommands.AutoStowAndStopIntake(arm, head));
 		NamedCommands.registerCommand("TurnUp", turnSideways());
 		NamedCommands.registerCommand("StopShooter", head.SpinDownShooter());
 		NamedCommands.registerCommand("TurnDown", turnAwayFromAmp());
 		NamedCommands.registerCommand("TurnAndShoot", Commands.sequence(turnToSpeaker(), MechanismCommands.AutonomousShoot(arm, head, drivetrain)));
-		NamedCommands.registerCommand("variableShoot", MechanismCommands.PrepareShoot(arm, head, () -> drivetrain.getDistanceToSpeaker()).andThen(MechanismCommands.Shoot(arm, head)));
+		NamedCommands.registerCommand("variableShoot", mechanismCommands.PrepareShoot(arm, head, () -> drivetrain.getDistanceToSpeaker()).andThen(mechanismCommands.Shoot(arm, head)));
 		
 		autoChooser = AutoBuilder.buildAutoChooser("mid start 2 piece");
 		
@@ -205,8 +211,8 @@ public class RobotContainer {
 		// TODO: Shoot should not need the position passed in
 		// TODO: Rename DBOT to MID_STAGE to be more descriptive
 		driverControllerCommands.a()
-				.onTrue(MechanismCommands.PrepareShoot(operatorController, arm, head, ShootingPosition.DBOT))
-				.onFalse(MechanismCommands.Shoot(driverController, operatorController, arm, head));
+				.onTrue(mechanismCommands.PrepareShoot(arm, head, ShootingPosition.DBOT))
+				.onFalse(mechanismCommands.Shoot(arm, head));
 		
 		// TODO: This can be turned into a drive to source function
 		/*
@@ -220,20 +226,20 @@ public class RobotContainer {
 	private void configureOperatorBindings() {
 		operatorControllerCommands.x().and(() -> !isClimbMode).onTrue(arm.Stow());
 		operatorControllerCommands.y().and(() -> !isClimbMode).whileTrue(head.StartOutake()).onFalse(head.StopIntake());
-		operatorControllerCommands.a().and(() -> !isClimbMode).onTrue(MechanismCommands.IntakeGround(driverController, operatorController, arm, head).andThen(arm.Stow()));
-		operatorControllerCommands.b().and(() -> !isClimbMode).onTrue(MechanismCommands.IntakeSource(driverController, operatorController, arm, head));
+		operatorControllerCommands.a().and(() -> !isClimbMode).onTrue(mechanismCommands.IntakeGround(arm, head).andThen(arm.Stow()));
+		operatorControllerCommands.b().and(() -> !isClimbMode).onTrue(mechanismCommands.IntakeSource(arm, head));
 		
-		operatorControllerCommands.leftTrigger().onTrue(MechanismCommands.PrepareShoot(operatorController, arm, head, ShootingPosition.AMP));
-		operatorControllerCommands.leftBumper().onTrue(MechanismCommands.Shoot(driverController, operatorController, arm, head));
+		operatorControllerCommands.leftTrigger().onTrue(mechanismCommands.PrepareShoot(arm, head, ShootingPosition.AMP));
+		operatorControllerCommands.leftBumper().onTrue(mechanismCommands.Shoot(arm, head));
 		
 		operatorControllerCommands.rightTrigger()
-				.onTrue(MechanismCommands.PrepareShoot(operatorController, arm, head, drivetrain::getDistanceToSpeaker))
-				.onFalse(MechanismCommands.PrepareShoot(operatorController, arm, head, drivetrain::getDistanceToSpeaker).andThen(MechanismCommands.Shoot(arm, head)).andThen(arm.Stow()));
+				.onTrue(mechanismCommands.PrepareShoot(arm, head, drivetrain::getDistanceToSpeaker))
+				.onFalse(mechanismCommands.PrepareShoot(arm, head, drivetrain::getDistanceToSpeaker).andThen(mechanismCommands.Shoot(arm, head)).andThen(arm.Stow()));
 		
-		operatorControllerCommands.rightBumper().onTrue(MechanismCommands.PrepareShoot(operatorController, arm, head, ShootingPosition.SUBWOOFER)).onFalse(MechanismCommands.Shoot(driverController, operatorController, arm, head));
+		operatorControllerCommands.rightBumper().onTrue(mechanismCommands.PrepareShoot(arm, head, ShootingPosition.SUBWOOFER)).onFalse(mechanismCommands.Shoot(arm, head));
 		
 		operatorControllerCommands.povLeft().onTrue(head.StopIntake().andThen(head.SpinDownShooter()));
-		operatorControllerCommands.povRight().onTrue(MechanismCommands.PrepareShoot(operatorController, arm, head, ShootingPosition.PODIUM)).onFalse(MechanismCommands.Shoot(driverController, operatorController, arm, head));
+		operatorControllerCommands.povRight().onTrue(mechanismCommands.PrepareShoot(arm, head, ShootingPosition.PODIUM)).onFalse(mechanismCommands.Shoot(arm, head));
 		
 		operatorControllerCommands.povUp().onTrue(Commands.runOnce(() -> climber.setSpeed(ClimberConstants.CLIMB_RATE, ClimberConstants.CLIMB_RATE), climber)).onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
 		operatorControllerCommands.povDown().onTrue(Commands.runOnce(() -> climber.setSpeed(-ClimberConstants.CLIMB_RATE, -ClimberConstants.CLIMB_RATE), climber)).onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
