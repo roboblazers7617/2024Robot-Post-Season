@@ -29,13 +29,18 @@ public class MechanismCommands {
 	}
 	
 	/**
-	 * will finish after piece has been intaken
+	 * Will finish after piece has been intaken.
 	 * 
-	 * @return Command
+	 * @param stopShooter
+	 *            Should the shooter be stopped before intaking a piece?
+	 * @param ground
+	 *            Should the piece be intaken from the ground or the source?
+	 * @return
+	 *         Command
 	 */
-	public Command IntakeSource() {
-		return head.SpinDownShooter()
-				.andThen(() -> arm.setArmTarget(ArmConstants.SOURCE_ANGLE))
+	public Command IntakePiece(boolean stopShooter, boolean ground) {
+		return Commands.either(head.SpinDownShooter(), Commands.none(), () -> stopShooter)
+				.andThen(Commands.either(Commands.runOnce(() -> arm.setArmTarget(ArmConstants.FLOOR_PICKUP)), Commands.runOnce(() -> arm.setArmTarget(ArmConstants.SOURCE_ANGLE)), () -> ground))
 				.andThen(() -> arm.setElevatorTarget(ElevatorConstants.MAX_HEIGHT))
 				.andThen(head.IntakePiece())
 				.andThen(new ScheduleCommand(driverHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)))
@@ -43,26 +48,47 @@ public class MechanismCommands {
 	}
 	
 	/**
-	 * will finish after piece has been intaken
+	 * Will finish after the piece has been intaken.
 	 * 
-	 * @return Command
+	 * @param stopShooter
+	 *            Should the shooter be stopped before intaking a piece?
+	 * @return
+	 *         Command
 	 */
-	public Command IntakeGround(boolean stopShooter) {
-		return Commands.either(head.SpinDownShooter(), Commands.none(), () -> stopShooter)
-				.andThen(() -> arm.setArmTarget(ArmConstants.FLOOR_PICKUP))
-				.andThen(() -> arm.setElevatorTarget(ElevatorConstants.MAX_HEIGHT))
-				.andThen(head.IntakePiece());
+	public Command IntakeSource(boolean stopShooter) {
+		return IntakePiece(stopShooter, false);
 	}
 	
 	/**
-	 * will finish after piece has been intaken
+	 * Will finish after the piece has been intaken.
 	 * 
-	 * @return Command
+	 * @return
+	 *         Command
+	 */
+	public Command IntakeSource() {
+		return IntakeSource(true);
+	}
+	
+	/**
+	 * Will finish after the piece has been intaken.
+	 * 
+	 * @param stopShooter
+	 *            Should the shooter be stopped before intaking a piece?
+	 * @return
+	 *         Command
+	 */
+	public Command IntakeGround(boolean stopShooter) {
+		return IntakePiece(stopShooter, true);
+	}
+	
+	/**
+	 * Will finish after the piece has been intaken.
+	 * 
+	 * @return
+	 *         Command
 	 */
 	public Command IntakeGround() {
-		return IntakeGround(true)
-				.andThen(new ScheduleCommand(driverHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)))
-				.andThen(new ScheduleCommand(operatorHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)));
+		return IntakeGround(true);
 	}
 	
 	/**
