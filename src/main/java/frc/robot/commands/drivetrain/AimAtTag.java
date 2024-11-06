@@ -27,8 +27,7 @@ public class AimAtTag extends Command {
 	private boolean invertFacing = false;
 	private final Supplier<Double> xMovement;
 	private final Supplier<Double> yMovement;
-
-
+	
 	public AimAtTag(Drivetrain drivetrain, int tagID, Supplier<Double> xMovement, Supplier<Double> yMovement) {
 		// Use addRequirements() here to declare subsystem dependencies.
 		addRequirements(drivetrain);
@@ -46,8 +45,8 @@ public class AimAtTag extends Command {
 		this.xMovement = xMovement;
 		this.yMovement = yMovement;
 	}
-
-	public AimAtTag(Drivetrain drivetrain, int tagID, boolean invertFacing, Supplier<Double> xMovement, Supplier<Double> yMovement){
+	
+	public AimAtTag(Drivetrain drivetrain, int tagID, boolean invertFacing, Supplier<Double> xMovement, Supplier<Double> yMovement) {
 		this(drivetrain, tagID, xMovement, yMovement);
 		this.invertFacing = invertFacing;
 	}
@@ -59,14 +58,11 @@ public class AimAtTag extends Command {
 	// Called every time the scheduler runs while the command is scheduled.
 	@Override
 	public void execute() {
-		if(invertFacing){
-			drivetrain.driveFieldOriented(drivetrain.getTargetSpeeds(xMovement.get(), yMovement.get(), tagPose.getTranslation().minus(drivetrain.getPose().getTranslation()).getAngle().plus(Rotation2d.fromDegrees(180))));	
+		if (invertFacing) {
+			drivetrain.driveFieldOriented(drivetrain.getTargetSpeeds(xMovement.get(), yMovement.get(), tagPose.getTranslation().minus(drivetrain.getPose().getTranslation()).getAngle().plus(Rotation2d.fromDegrees(180))));
+		} else {
+			drivetrain.driveFieldOriented(drivetrain.getTargetSpeeds(xMovement.get(), yMovement.get(), tagPose.getTranslation().minus(drivetrain.getPose().getTranslation()).getAngle()));
 		}
-		else{
-		drivetrain.driveFieldOriented(drivetrain.getTargetSpeeds(xMovement.get(), yMovement.get(), tagPose.getTranslation().minus(drivetrain.getPose().getTranslation()).getAngle()));
-		
-		}
-	
 	}
 	
 	// Called once the command ends or is interrupted.
@@ -74,10 +70,11 @@ public class AimAtTag extends Command {
 	public void end(boolean interrupted) {
 		drivetrain.drive(new ChassisSpeeds());
 		drivetrain.resetLastAngeScalar();
-
 	}
 	
 	// Returns true when the command should end.
 	@Override
-	public boolean isFinished() {return false;}
+	public boolean isFinished() {
+		return false;
+	}
 }

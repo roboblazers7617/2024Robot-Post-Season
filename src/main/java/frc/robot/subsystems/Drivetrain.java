@@ -4,7 +4,6 @@
 
 package frc.robot.subsystems;
 
-
 import frc.robot.util.LimelightHelpers;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -59,13 +58,13 @@ public class Drivetrain extends SubsystemBase {
 	private AprilTagFieldLayout fieldLayout;
 	
 	private boolean doVisionUpdates = false;
-
+	
 	private Timer timer = new Timer();
-
+	
 	private LimelightHelpers.PoseEstimate poseData;
-
+	
 	private Vector<N3> kalmanStdDevs = VecBuilder.fill(.7, .7, Integer.MAX_VALUE);
-
+	
 	/**
 	 * Initialize {@link SwerveDrive} with the directory provided.
 	 */
@@ -145,12 +144,10 @@ public class Drivetrain extends SubsystemBase {
 		// event markers.
 		return AutoBuilder.followPath(path);
 	}
-
-	public Command driveToPose(Pose2d pose){
-		PathConstraints constraints = new PathConstraints(
-				swerveDrive.getMaximumVelocity(), 4.0, swerveDrive.getMaximumAngularVelocity(), Units.degreesToRadians(720));
+	
+	public Command driveToPose(Pose2d pose) {
+		PathConstraints constraints = new PathConstraints(swerveDrive.getMaximumVelocity(), 4.0, swerveDrive.getMaximumAngularVelocity(), Units.degreesToRadians(720));
 		return AutoBuilder.pathfindToPose(pose, constraints, 0.0, 0.0);
-		
 	}
 	
 	/**
@@ -264,10 +261,9 @@ public class Drivetrain extends SubsystemBase {
 	@Override
 	public void periodic() {
 		if (doVisionUpdates) {
-			try{
-			processVision();
-			}
-			catch(Exception e){}
+			try {
+				processVision();
+			} catch (Exception e) {}
 		}
 		motorTab.update();
 	}
@@ -276,23 +272,23 @@ public class Drivetrain extends SubsystemBase {
 	public void simulationPeriodic() {}
 	
 	private void processVision() {
-			//if(checkAllianceColors(Alliance.Blue)){
-			LimelightHelpers.SetRobotOrientation("", getPose().getRotation().getDegrees(), 0, 0, 0, 0, 0);
-			//}
-			/*else{
-				LimelightHelpers.SetRobotOrientation("", getPose().getRotation().plus(Rotation2d.fromDegrees(180)).getDegrees(), 0, 0, 0, 0, 0);
-			}*/
-
-			poseData = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("");
-			if (poseData.tagCount > 0 ) {
-				if( fieldLayout.getTagPose((int)LimelightHelpers.getFiducialID("")).orElseThrow().toPose2d().getTranslation().
-				getDistance(getPose().getTranslation()) < VisionConstants.MAX_DETECTION_RANGE){
-			  swerveDrive.addVisionMeasurement(poseData.pose,poseData.timestampSeconds, kalmanStdDevs);
-			  
-				}
+		// if(checkAllianceColors(Alliance.Blue)){
+		LimelightHelpers.SetRobotOrientation("", getPose().getRotation().getDegrees(), 0, 0, 0, 0, 0);
+		// }
+		/*
+		 * else{
+		 * LimelightHelpers.SetRobotOrientation("", getPose().getRotation().plus(Rotation2d.fromDegrees(180)).getDegrees(), 0, 0, 0, 0, 0);
+		 * }
+		 */
+		
+		poseData = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("");
+		if (poseData.tagCount > 0) {
+			if (fieldLayout.getTagPose((int) LimelightHelpers.getFiducialID("")).orElseThrow().toPose2d().getTranslation().getDistance(getPose().getTranslation()) < VisionConstants.MAX_DETECTION_RANGE) {
+				swerveDrive.addVisionMeasurement(poseData.pose, poseData.timestampSeconds, kalmanStdDevs);
 			}
+		}
 	}
-
+	
 	private boolean checkAllianceColors(Alliance checkAgainst) {
 		if (DriverStation.getAlliance().isPresent()) {
 			return DriverStation.getAlliance().get() == checkAgainst;
@@ -320,8 +316,7 @@ public class Drivetrain extends SubsystemBase {
 	 *            The pose to set the odometry to
 	 */
 	public void resetOdometry(Pose2d initialHolonomicPose) {
-		
-		swerveDrive.setGyro(new Rotation3d(0,0,initialHolonomicPose.getRotation().getRadians()));
+		swerveDrive.setGyro(new Rotation3d(0, 0, initialHolonomicPose.getRotation().getRadians()));
 		swerveDrive.resetOdometry(initialHolonomicPose);
 	}
 	
@@ -372,8 +367,8 @@ public class Drivetrain extends SubsystemBase {
 	public void zeroGyro() {
 		swerveDrive.zeroGyro();
 	}
-
-	public Command resetPose(Pose2d resetPose){
+	
+	public Command resetPose(Pose2d resetPose) {
 		return Commands.runOnce(() -> {
 			resetOdometry(resetPose);
 			resetLastAngeScalar();
@@ -411,8 +406,8 @@ public class Drivetrain extends SubsystemBase {
 	public Rotation2d getHeading() {
 		return swerveDrive.getOdometryHeading();
 	}
-
-	public void setHeadingCorrection(boolean doHeadingCorrection){
+	
+	public void setHeadingCorrection(boolean doHeadingCorrection) {
 		swerveDrive.setHeadingCorrection(doHeadingCorrection);
 	}
 	
@@ -495,8 +490,8 @@ public class Drivetrain extends SubsystemBase {
 	public Rotation2d getPitch() {
 		return swerveDrive.getPitch();
 	}
-
-	public void resetLastAngeScalar(){
+	
+	public void resetLastAngeScalar() {
 		swerveDrive.swerveController.lastAngleScalar = getHeading().getRadians();
 	}
 	
