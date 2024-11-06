@@ -19,8 +19,12 @@ import frc.robot.subsystems.Head;
 public class MechanismCommands {
 	private final HapticController driverHapticController;
 	private final HapticController operatorHapticController;
+	private final Arm arm;
+	private final Head head;
 	
-	public MechanismCommands(HapticController driverHapticController, HapticController operatorHapticController) {
+	public MechanismCommands(Arm arm, Head head, HapticController driverHapticController, HapticController operatorHapticController) {
+		this.arm = arm;
+		this.head = head;
 		this.driverHapticController = driverHapticController;
 		this.operatorHapticController = operatorHapticController;
 	}
@@ -28,13 +32,9 @@ public class MechanismCommands {
 	/**
 	 * will finish after piece has been intaken
 	 * 
-	 * @param arm
-	 *            subsystem
-	 * @param head
-	 *            subsystem
 	 * @return Command
 	 */
-	public Command IntakeSource(Arm arm, Head head) {
+	public Command IntakeSource() {
 		return head.SpinDownShooter()
 				.andThen(() -> arm.setArmTarget(ArmConstants.SOURCE_ANGLE))
 				.andThen(() -> arm.setElevatorTarget(ElevatorConstants.MAX_HEIGHT))
@@ -46,13 +46,9 @@ public class MechanismCommands {
 	/**
 	 * will finish after piece has been intaken
 	 * 
-	 * @param arm
-	 *            subsystem
-	 * @param head
-	 *            subsystem
 	 * @return Command
 	 */
-	public static Command IntakeGround(Arm arm, Head head, boolean stopShooter) {
+	public Command IntakeGround(boolean stopShooter) {
 		return Commands.either(head.SpinDownShooter(), Commands.none(), () -> stopShooter)
 				.andThen(() -> arm.setArmTarget(ArmConstants.FLOOR_PICKUP))
 				.andThen(() -> arm.setElevatorTarget(ElevatorConstants.MAX_HEIGHT))
@@ -62,14 +58,10 @@ public class MechanismCommands {
 	/**
 	 * will finish after piece has been intaken
 	 * 
-	 * @param arm
-	 *            subsystem
-	 * @param head
-	 *            subsystem
 	 * @return Command
 	 */
-	public Command IntakeGround(Arm arm, Head head) {
-		return IntakeGround(arm, head, true)
+	public Command IntakeGround() {
+		return IntakeGround(true)
 				.andThen(new ScheduleCommand(driverHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)))
 				.andThen(new ScheduleCommand(operatorHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)));
 	}
@@ -77,13 +69,9 @@ public class MechanismCommands {
 	/**
 	 * cancel shoot and intake and stow
 	 * 
-	 * @param arm
-	 *            subsystem
-	 * @param head
-	 *            subsystem
 	 * @return
 	 */
-	public static Command StowStopIntakeAndShooter(Arm arm, Head head) {
+	public Command StowStopIntakeAndShooter() {
 		return arm.Stow()
 				.andThen(head.StopIntake())
 				.andThen(head.SpinDownShooter());
@@ -92,7 +80,7 @@ public class MechanismCommands {
 	// THIS ISNT CODE DUPLICATION IT DOES A FUNDAMENTALLY DIFFERENT THING!!!!!
 	// TODO: I see that this is different, but when would it be used? Should be renamed to better describe
 	// what it does. Why doesn't it stop the shooter? Will it be used for auto?
-	public static Command AutoStowAndStopIntake(Arm arm, Head head) {
+	public Command AutoStowAndStopIntake() {
 		return arm.Stow()
 				.andThen(head.StopIntake());
 	}
@@ -100,11 +88,9 @@ public class MechanismCommands {
 	/**
 	 * will finish when ready
 	 * 
-	 * @param arm
-	 * @param head
 	 * @param position
 	 */
-	public Command PrepareShoot(Arm arm, Head head, ShootingPosition position) {
+	public Command PrepareShoot(ShootingPosition position) {
 		return arm.SetTargets(position)
 				.andThen(head.SpinUpShooter(position))
 				.andThen(new ScheduleCommand(operatorHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)));
@@ -113,17 +99,15 @@ public class MechanismCommands {
 	/**
 	 * will finish when ready
 	 * 
-	 * @param arm
-	 * @param head
 	 * @param distance
 	 */
-	public Command PrepareShoot(Arm arm, Head head, Supplier<Double> distance) {
+	public Command PrepareShoot(Supplier<Double> distance) {
 		return arm.SetTargets(distance)
 				.andThen(head.SpinUpShooter(ShootingConstants.VARIABLE_DISTANCE_SHOT))
 				.andThen(new ScheduleCommand(operatorHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)));
 	}
 	
-	public static Command AutonomousPrepareShoot(Arm arm, Head head, Supplier<Double> distance) {
+	public Command AutonomousPrepareShoot(Supplier<Double> distance) {
 		return arm.SetTargetsAuto(distance)
 				.andThen(head.SpinUpShooter(ShootingConstants.AUTO_SHOOT_SPEED));
 	}
@@ -131,30 +115,26 @@ public class MechanismCommands {
 	/**
 	 * will finish after piece has been shot
 	 * 
-	 * @param arm
-	 *            subsystem
-	 * @param head
-	 *            subsystem
 	 * @return Command
 	 */
-	public Command Shoot(Arm arm, Head head) {
-		return Shoot(arm, head, true)
+	public Command Shoot() {
+		return Shoot(true)
 				.andThen(new ScheduleCommand(driverHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)))
 				.andThen(new ScheduleCommand(operatorHapticController.HapticTap(RumbleType.kBothRumble, 0.3, 0.3)));
 	}
 	
-	public static Command Shoot(Arm arm, Head head, boolean stopShooter) {
+	public Command Shoot(boolean stopShooter) {
 		return Commands.waitUntil(() -> arm.areArmAndElevatorAtTarget())
 				.andThen(head.Shoot(stopShooter));
 	}
 	
-	public Command AutonomousShoot(Arm arm, Head head, ShootingPosition position) {
-		return PrepareShoot(arm, head, position)
-				.andThen(Shoot(arm, head, false));
+	public Command AutonomousShoot(ShootingPosition position) {
+		return PrepareShoot(position)
+				.andThen(Shoot(false));
 	}
 	
-	public static Command AutonomousShoot(Arm arm, Head head, Drivetrain drivetrain) {
-		return AutonomousPrepareShoot(arm, head, () -> drivetrain.getDistanceToSpeaker())
-				.andThen(Shoot(arm, head, false));
+	public Command AutonomousShoot(Drivetrain drivetrain) {
+		return AutonomousPrepareShoot(() -> drivetrain.getDistanceToSpeaker())
+				.andThen(Shoot(false));
 	}
 }
