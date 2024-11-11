@@ -14,6 +14,8 @@ public class WaitUntilInterrupt extends Command {
 	
 	/**
 	 * Creates a new WaitUntilInterrupt command that finishes when the interrupt is triggered.
+	 * <p>
+	 * First bool in callback indicates trigger on rising edge, second bool indicates falling edge.
 	 *
 	 * @param source
 	 *            digital source to await an interrupt on
