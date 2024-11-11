@@ -5,6 +5,9 @@ import edu.wpi.first.wpilibj.AsynchronousInterrupt;
 import edu.wpi.first.wpilibj.DigitalSource;
 import java.util.function.BiConsumer;
 
+/**
+ * Command that creates an {@link edu.wpi.first.wpilibj.AsynchronousInterrupt} and uses it to trigger a callback, waiting until the callback happens before finishing.
+ */
 public class WaitUntilInterrupt extends Command {
 	/**
 	 * Set to true after the callback is called.
