@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.RobotContainer;
 import frc.robot.util.Alert;
+import frc.robot.util.NetworkTableButton;
 import frc.robot.util.Alert.AlertType;
 
 /** Add your docs here. */
@@ -73,6 +74,7 @@ public class DriverStationTab extends ShuffleboardTabBase {
 		// this should be called immediately
 		ShuffleboardTab tab = Shuffleboard.getTab("Driver Station");
 		tab.add("Auto Path", autoChooser);
+		new NetworkTableButton("Shuffleboard/Driver Station", "great button", new InstantCommand(() -> System.out.println("someone clicked on me")), false);
 	}
 	
 	@Override
