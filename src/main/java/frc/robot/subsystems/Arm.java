@@ -80,7 +80,7 @@ public class Arm extends SubsystemBase {
 	private Timer time = new Timer();
 	
 	private final MotorTab motorTab = new MotorTab(4, "arm", 2);
-
+	
 	/** Creates a new Arm. */
 	public Arm() {
 		// setup arm motors
@@ -119,18 +119,18 @@ public class Arm extends SubsystemBase {
 		armAbsoluteEncoder.setZeroOffset(ArmConstants.ARM_OFFSET);
 		
 		armTarget = armAbsoluteEncoder.getPosition();
-
+		
 		armAngleBasedOnDistanceExtended.put(1.27, ShootingPosition.SUBWOOFER.arm_angle());
 		armAngleBasedOnDistanceExtended.put(2.9, 33.5);
 		armAngleBasedOnDistanceExtended.put(3.1, 36.0);
-
-		//TODO: Add Treemap values
+		
+		// TODO: Add Treemap values
 		armAngleBasedOnDistanceRetracted.put(1.96, 18.6);
 		armAngleBasedOnDistanceRetracted.put(2.47, 27.0);
 		armAngleBasedOnDistanceRetracted.put(2.92, 31.8);
 		armAngleBasedOnDistanceRetracted.put(2.96, 30.9);
 		armAngleBasedOnDistanceRetracted.put(3.51, 35.1);
-		armAngleBasedOnDistanceRetracted.put(3.61,32.7);
+		armAngleBasedOnDistanceRetracted.put(3.61, 32.7);
 		armAngleBasedOnDistanceRetracted.put(4.11, 37.3);
 		armAngleBasedOnDistanceRetracted.put(4.25, 38.3);
 		armAngleBasedOnDistanceRetracted.put(4.29, 38.3);
@@ -204,7 +204,7 @@ public class Arm extends SubsystemBase {
 		
 		armTarget = targetDegrees;
 	}
-
+	
 	/**
 	 * sets the arm target based on the distance to the speaker and the interpolation table
 	 * 
@@ -214,11 +214,10 @@ public class Arm extends SubsystemBase {
 	public void setArmTargetByDistanceExtended(double distance) {
 		armTarget = MathUtil.clamp(armAngleBasedOnDistanceExtended.get(distance), ArmConstants.MIN_ANGLE, ArmConstants.MAX_ANGLE);
 	}
-
+	
 	public void setArmTargetByDistanceRetracted(double distance) {
 		armTarget = MathUtil.clamp(armAngleBasedOnDistanceRetracted.get(distance), ArmConstants.MIN_ANGLE, ArmConstants.MAX_ANGLE);
 	}
-
 	
 	public Command RaiseElevator() {
 		return this.runOnce(() -> setElevatorTarget(ElevatorConstants.MAX_HEIGHT));
@@ -239,7 +238,6 @@ public class Arm extends SubsystemBase {
 			setElevatorTarget(ElevatorConstants.MIN_HEIGHT);
 		});
 	}
-	
 	
 	/**
 	 * sets the velocity for the arm by moving a position setpoint
@@ -270,27 +268,27 @@ public class Arm extends SubsystemBase {
 		}
 		elevatorTarget = target;
 	}
-
+	
 	public Command SetTargets(ShootingPosition position) {
 		return Commands.runOnce(() -> {
-				setArmTarget(position.arm_angle());
-				setElevatorTarget(position.elevator_target());
+			setArmTarget(position.arm_angle());
+			setElevatorTarget(position.elevator_target());
 		});
 	}
-
-	public Command SetTargets(Supplier<Double> distance){
+	
+	public Command SetTargets(Supplier<Double> distance) {
 		return Commands.runOnce(() -> {
-				//TODO: Remove me!
-				System.out.println("Distance is " + distance.get());
-				setArmTargetByDistanceRetracted(distance.get());
-				setElevatorTarget(ElevatorConstants.MIN_HEIGHT);
+			// TODO: Remove me!
+			System.out.println("Distance is " + distance.get());
+			setArmTargetByDistanceRetracted(distance.get());
+			setElevatorTarget(ElevatorConstants.MIN_HEIGHT);
 		});
 	}
-
+	
 	public Command SetTargetsAuto(Supplier<Double> distance) {
 		return Commands.runOnce(() -> {
-				setArmTargetByDistanceExtended(distance.get());
-				setElevatorTarget(ElevatorConstants.MAX_HEIGHT);
+			setArmTargetByDistanceExtended(distance.get());
+			setElevatorTarget(ElevatorConstants.MAX_HEIGHT);
 		});
 	}
 	
@@ -406,9 +404,8 @@ public class Arm extends SubsystemBase {
 	public MotorTab getMotorTab() {
 		return motorTab;
 	}
-
-	public boolean areArmAndElevatorAtTarget(){
-		return (Math.abs(armTarget - armAbsoluteEncoder.getPosition()) < ArmConstants.ARM_AT_TARGET_DEADBAND)
-			&& (Math.abs(elevatorTarget - elevatorEncoder.getPosition()) < ElevatorConstants.ELEVATOR_AT_TARGET_DEADBAND || ElevatorConstants.KILL_IT_ALL);
+	
+	public boolean areArmAndElevatorAtTarget() {
+		return (Math.abs(armTarget - armAbsoluteEncoder.getPosition()) < ArmConstants.ARM_AT_TARGET_DEADBAND) && (Math.abs(elevatorTarget - elevatorEncoder.getPosition()) < ElevatorConstants.ELEVATOR_AT_TARGET_DEADBAND || ElevatorConstants.KILL_IT_ALL);
 	}
 }
