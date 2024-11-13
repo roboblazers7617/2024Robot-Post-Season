@@ -25,7 +25,6 @@ import frc.robot.subsystems.Arm;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -34,7 +33,6 @@ import com.pathplanner.lib.auto.NamedCommands;
 import frc.robot.commands.MechanismCommands;
 import frc.robot.commands.controls.HapticController;
 import frc.robot.commands.drivetrain.AimAtTag;
-import frc.robot.commands.drivetrain.LockWheelsState;
 import frc.robot.commands.drivetrain.TurnToTag;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
@@ -42,16 +40,12 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -59,10 +53,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Mechanism;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -97,9 +89,7 @@ public class RobotContainer {
 	private final Drivetrain drivetrain = new Drivetrain(/* vision */);
 	
 	private final Command absoluteDrive = drivetrain.driveCommand(() -> processJoystickVelocity(driverControllerCommands.getLeftY()), () -> processJoystickVelocity(driverControllerCommands.getLeftX()), () -> processJoystickAngular(driverControllerCommands.getRightX()), () -> processJoystickAngular(driverControllerCommands.getRightY()));
-	
 	private final Command rotationDrive = drivetrain.driveCommand(() -> processJoystickVelocity(driverControllerCommands.getLeftY()), () -> processJoystickVelocity(driverControllerCommands.getLeftX()), () -> processJoystickAngularButFree(driverControllerCommands.getRightX()));
-	
 	private final Command rotationDriveFast = drivetrain.driveCommand(() -> processJoystickVelocity(driverControllerCommands.getLeftY()), () -> processJoystickVelocity(driverControllerCommands.getLeftX()), () -> processJoystickAngularButFree(driverControllerCommands.getRightX() * SwerveConstants.FAST_TURN_TIME));
 	
 	private final DigitalInput brakeToggleButton = new DigitalInput(Constants.BRAKE_TOGGLE_BUTTON_DIO);
@@ -132,34 +122,32 @@ public class RobotContainer {
 		configureDefaultCommands();
 		configureDriverBindings();
 		configureOperatorBindings();
+		
+		// Set up shuffleboard
 		shuffleboard = ShuffleboardInfo.getInstance();
+		// Add tabs
 		ArrayList<ShuffleboardTabBase> tabs = new ArrayList<>();
-		// YOUR CODE HERE | | |
-		// \/ \/ \/
 		tabs.add(new DriverStationTab(autoChooser, brakeToggleButton));
-		
 		tabs.add(new ArmTab(arm));
-		
 		tabs.add(new SwerveTab(drivetrain));
-		
 		tabs.add(new LEDTab(led));
-		
 		tabs.add(new HeadTab(head));
-		
 		tabs.add(new ClimberTab(climber));
-		
-		// STOP HERE
 		shuffleboard.addTabs(tabs);
 		
+		// Load the AprilTag layout file
 		try {
 			fieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile);
 		} catch (IOException e) {
 			fieldLayout = null;
 		}
 		
+		// Set up the brake toggle button
 		Trigger brakeToggleTrigger = new Trigger(() -> brakeToggleButton.get());
 		brakeToggleTrigger.onTrue(arm.ToggleBrakeModes());
 		brakeToggleTrigger.onTrue(head.ToggleBreakModes());
+		
+		// Enable brake mode on enable
 		Trigger enableTrigger = new Trigger(() -> DriverStation.isEnabled());
 		enableTrigger.onTrue(Commands.runOnce(() -> {
 			arm.EnableBrakeMode();
@@ -177,7 +165,8 @@ public class RobotContainer {
 	}
 	
 	private void configureDriverBindings() {
-		driverControllerCommands.povRight().whileTrue(aimAtSpeaker(() -> processJoystickVelocity(driverController.getLeftY()), () -> processJoystickVelocity(driverController.getLeftX())));
+		driverControllerCommands.povRight()
+				.whileTrue(aimAtSpeaker(() -> processJoystickVelocity(driverController.getLeftY()), () -> processJoystickVelocity(driverController.getLeftX())));
 		
 		driverControllerCommands.leftBumper()
 				.onTrue(new ScheduleCommand(rotationDrive))
@@ -190,6 +179,7 @@ public class RobotContainer {
 		driverControllerCommands.rightBumper()
 				.onTrue(Commands.runOnce(() -> speedMultiplier = Math.max(.1, speedMultiplier - SwerveConstants.SLOW_SPEED_DECREMENT)))
 				.onFalse(Commands.runOnce(() -> speedMultiplier += SwerveConstants.SLOW_SPEED_DECREMENT));
+		
 		driverControllerCommands.rightTrigger()
 				.onTrue(Commands.runOnce(() -> speedMultiplier = Math.min(1, speedMultiplier + SwerveConstants.FAST_SPEED_INCREMENT)))
 				.onFalse(Commands.runOnce(() -> speedMultiplier -= SwerveConstants.FAST_SPEED_INCREMENT));
@@ -202,11 +192,15 @@ public class RobotContainer {
 				.and(() -> checkAllianceColors(Alliance.Blue))
 				.whileTrue(drivetrain.driveCommand(() -> processJoystickVelocity(driverControllerCommands.getLeftY()), () -> processJoystickVelocity(driverControllerCommands.getLeftX()), () -> Math.cos(Units.degreesToRadians(150)), () -> Math.sin(Units.degreesToRadians(150))));
 		
-		driverControllerCommands.povUp().onTrue(Commands.runOnce(() -> speedMultiplier = Math.min(1, speedMultiplier + SwerveConstants.PRECISE_INCREMENT)));
-		driverControllerCommands.povDown().onTrue(Commands.runOnce(() -> speedMultiplier = Math.max(.1, speedMultiplier - SwerveConstants.PRECISE_INCREMENT)));
+		driverControllerCommands.povUp()
+				.onTrue(Commands.runOnce(() -> speedMultiplier = Math.min(1, speedMultiplier + SwerveConstants.PRECISE_INCREMENT)));
+		driverControllerCommands.povDown()
+				.onTrue(Commands.runOnce(() -> speedMultiplier = Math.max(.1, speedMultiplier - SwerveConstants.PRECISE_INCREMENT)));
 		
-		driverControllerCommands.start().onTrue(Commands.runOnce(() -> drivetrain.zeroGyro()));
-		driverControllerCommands.back().onTrue(Commands.runOnce(() -> drivetrain.doVisionUpdates(false)));
+		driverControllerCommands.start()
+				.onTrue(Commands.runOnce(() -> drivetrain.zeroGyro()));
+		driverControllerCommands.back()
+				.onTrue(Commands.runOnce(() -> drivetrain.doVisionUpdates(false)));
 		
 		// TODO: Shoot should not need the position passed in
 		// TODO: Rename DBOT to MID_STAGE to be more descriptive
@@ -224,25 +218,45 @@ public class RobotContainer {
 	}
 	
 	private void configureOperatorBindings() {
-		operatorControllerCommands.x().and(() -> !isClimbMode).onTrue(arm.Stow());
-		operatorControllerCommands.y().and(() -> !isClimbMode).whileTrue(head.StartOutake()).onFalse(head.StopIntake());
-		operatorControllerCommands.a().and(() -> !isClimbMode).onTrue(mechanismCommands.IntakeGround().andThen(arm.Stow()));
-		operatorControllerCommands.b().and(() -> !isClimbMode).onTrue(mechanismCommands.IntakeSource());
+		operatorControllerCommands.x()
+				.and(() -> !isClimbMode)
+				.onTrue(arm.Stow());
+		operatorControllerCommands.y()
+				.and(() -> !isClimbMode)
+				.whileTrue(head.StartOutake())
+				.onFalse(head.StopIntake());
+		operatorControllerCommands.a()
+				.and(() -> !isClimbMode)
+				.onTrue(mechanismCommands.IntakeGround().andThen(arm.Stow()));
+		operatorControllerCommands.b()
+				.and(() -> !isClimbMode)
+				.onTrue(mechanismCommands.IntakeSource());
 		
-		operatorControllerCommands.leftTrigger().onTrue(mechanismCommands.PrepareShoot(ShootingPosition.AMP));
-		operatorControllerCommands.leftBumper().onTrue(mechanismCommands.Shoot());
+		operatorControllerCommands.leftTrigger()
+				.onTrue(mechanismCommands.PrepareShoot(ShootingPosition.AMP));
+		operatorControllerCommands.leftBumper()
+				.onTrue(mechanismCommands.Shoot());
 		
 		operatorControllerCommands.rightTrigger()
 				.onTrue(mechanismCommands.PrepareShoot(drivetrain::getDistanceToSpeaker))
 				.onFalse(mechanismCommands.PrepareShoot(drivetrain::getDistanceToSpeaker).andThen(mechanismCommands.Shoot()).andThen(arm.Stow()));
 		
-		operatorControllerCommands.rightBumper().onTrue(mechanismCommands.PrepareShoot(ShootingPosition.SUBWOOFER)).onFalse(mechanismCommands.Shoot());
+		operatorControllerCommands.rightBumper()
+				.onTrue(mechanismCommands.PrepareShoot(ShootingPosition.SUBWOOFER))
+				.onFalse(mechanismCommands.Shoot());
 		
-		operatorControllerCommands.povLeft().onTrue(head.StopIntake().andThen(head.SpinDownShooter()));
-		operatorControllerCommands.povRight().onTrue(mechanismCommands.PrepareShoot(ShootingPosition.PODIUM)).onFalse(mechanismCommands.Shoot());
+		operatorControllerCommands.povLeft()
+				.onTrue(head.StopIntake().andThen(head.SpinDownShooter()));
+		operatorControllerCommands.povRight()
+				.onTrue(mechanismCommands.PrepareShoot(ShootingPosition.PODIUM))
+				.onFalse(mechanismCommands.Shoot());
 		
-		operatorControllerCommands.povUp().onTrue(Commands.runOnce(() -> climber.setSpeed(ClimberConstants.CLIMB_RATE, ClimberConstants.CLIMB_RATE), climber)).onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
-		operatorControllerCommands.povDown().onTrue(Commands.runOnce(() -> climber.setSpeed(-ClimberConstants.CLIMB_RATE, -ClimberConstants.CLIMB_RATE), climber)).onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
+		operatorControllerCommands.povUp()
+				.onTrue(Commands.runOnce(() -> climber.setSpeed(ClimberConstants.CLIMB_RATE, ClimberConstants.CLIMB_RATE), climber))
+				.onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
+		operatorControllerCommands.povDown()
+				.onTrue(Commands.runOnce(() -> climber.setSpeed(-ClimberConstants.CLIMB_RATE, -ClimberConstants.CLIMB_RATE), climber))
+				.onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
 		
 		operatorControllerCommands.x()
 				.and(() -> isClimbMode)
@@ -261,10 +275,12 @@ public class RobotContainer {
 				.onTrue(Commands.runOnce(() -> climber.setSpeed(0, ClimberConstants.CLIMB_RATE), climber))
 				.onFalse(Commands.runOnce(() -> climber.setSpeed(0, 0), climber));
 		
-		operatorControllerCommands.start().onTrue(head.IntakePiece());
-		operatorControllerCommands.back().onTrue(Commands.runOnce(() -> {
-			isClimbMode = !isClimbMode;
-		}));
+		operatorControllerCommands.start()
+				.onTrue(head.IntakePiece());
+		operatorControllerCommands.back()
+				.onTrue(Commands.runOnce(() -> {
+					isClimbMode = !isClimbMode;
+				}));
 	}
 	
 	public String outputValues(Supplier<Double> distance, Supplier<Double> armAngle) {
