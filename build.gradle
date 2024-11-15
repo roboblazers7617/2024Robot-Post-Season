@@ -3,6 +3,13 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2024.3.2"
 }
 
+// Add manual dependencies
+repositories {
+	flatDir {
+		dirs "./libs"
+	}
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -69,6 +76,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation name: 'buttonbox-lib'
 }
 
 test {
@@ -110,5 +119,6 @@ tasks.withType(Javadoc) {
 		"https://codedocs.revrobotics.com/java",
 		"https://api.ctr-electronics.com/phoenix/release/java",
 		"https://api.ctr-electronics.com/phoenix6/release/java",
+		"https://roboblazers7617.github.io/ButtonBoxLib",
 	])
 }
