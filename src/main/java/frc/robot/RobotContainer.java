@@ -130,6 +130,7 @@ public class RobotContainer {
 		configureDriverBindings();
 		configureOperatorBindings();
 		configureButtonBox();
+		configureButtonBox();
 		
 		// Set up shuffleboard
 		shuffleboard = ShuffleboardInfo.getInstance();
