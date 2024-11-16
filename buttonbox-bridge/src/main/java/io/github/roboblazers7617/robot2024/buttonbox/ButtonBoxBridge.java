@@ -70,8 +70,7 @@ public class ButtonBoxBridge {
 		
 		ButtonBoxClient client = new ButtonBoxClient(inst);
 		
-		client.addControl(new TestControlMIDI("Test Control", new MIDIAddress(midiDevice, ShortMessage.CONTROL_CHANGE, 0, 0)));
-		client.addControl(new ButtonMIDI("Test Button", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 0, 0)));
+		configureControls(client, midiDevice);
 		
 		while (true) {
 			try {
@@ -82,5 +81,20 @@ public class ButtonBoxBridge {
 			}
 			client.periodic();
 		}
+	}
+	
+	/**
+	 * Configures the ButtonBox controls.
+	 */
+	private void configureControls(ButtonBoxClient client, MIDIDevice midiDevice) {
+		// Test controls
+		client.addControl(new TestControlMIDI("Test Control", new MIDIAddress(midiDevice, ShortMessage.CONTROL_CHANGE, 1, 0)));
+		client.addControl(new ButtonMIDI("Test Button", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 1, 0)));
+		
+		// Head controls
+		client.addControl(new ButtonMIDI("Shoot Button", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 0, 0)));
+		client.addControl(new ButtonMIDI("Intake Button Ground", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 0, 1)));
+		client.addControl(new ButtonMIDI("Intake Button Source", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 0, 2)));
+		client.addControl(new ButtonMIDI("Outake Button", new MIDIAddress(midiDevice, ShortMessage.NOTE_ON, 0, 3)));
 	}
 }

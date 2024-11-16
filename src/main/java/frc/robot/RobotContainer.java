@@ -297,10 +297,25 @@ public class RobotContainer {
 		Button testButton = new Button("Test Button");
 		testButton.setMode(ButtonMode.TOGGLE_RISING);
 		buttonBox.addControl(testButton);
-		
 		testButton.getTrigger().onTrue(Commands.runOnce(() -> {
 			System.out.println("Button pressed!");
 		}));
+		
+		Button shootButton = new Button("Shoot Button");
+		buttonBox.addControl(shootButton);
+		shootButton.getTrigger().onTrue(mechanismCommands.Shoot());
+		
+		Button intakeButtonGround = new Button("Intake Button Ground");
+		buttonBox.addControl(intakeButtonGround);
+		intakeButtonGround.getTrigger().onTrue(mechanismCommands.IntakeGround());
+		
+		Button intakeButtonSource = new Button("Intake Button Source");
+		buttonBox.addControl(intakeButtonSource);
+		intakeButtonSource.getTrigger().onTrue(mechanismCommands.IntakeSource());
+		
+		Button outakeButton = new Button("Outake Button");
+		buttonBox.addControl(outakeButton);
+		outakeButton.getTrigger().onTrue(head.OutakePiece());
 	}
 	
 	public String outputValues(Supplier<Double> distance, Supplier<Double> armAngle) {
