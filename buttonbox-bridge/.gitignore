@@ -1,0 +1,2 @@
+# Do not ignore external libraries
+!libs/*.jar
