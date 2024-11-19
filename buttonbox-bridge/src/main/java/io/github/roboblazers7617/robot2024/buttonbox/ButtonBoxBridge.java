@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import java.util.Vector;
 
-import edu.wpi.first.math.WPIMathJNI;
+import edu.wpi.first.math.jni.WPIMathJNI;
 import edu.wpi.first.util.WPIUtilJNI;
 
 import javax.sound.midi.MidiDevice;
