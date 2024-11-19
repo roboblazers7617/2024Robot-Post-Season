@@ -3,13 +3,6 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2025.1.1-beta-1"
 }
 
-// Add manual dependencies
-repositories {
-	flatDir {
-		dirs "./libs"
-	}
-}
-
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
