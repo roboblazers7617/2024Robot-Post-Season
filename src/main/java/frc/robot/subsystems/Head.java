@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.ShootingConstants.ShootingPosition;
+import frc.robot.commands.WaitUntilInterrupt;
 
 /**
  * Shooter and intake.
@@ -144,14 +145,9 @@ public class Head extends SubsystemBase {
 		return Commands.runOnce(() -> {
 			setIntakeSpeed(IntakeConstants.INTAKE_SPEED);
 		}, this)
-				.andThen(Commands.waitUntil(() -> isNoteWithinAlignmentSensor()))
-				.andThen(Commands.runOnce(() -> {
-					setIntakeSpeed(IntakeConstants.ALIGMNMENT_SPEED);
-				}))
-				.andThen(Commands.waitUntil(() -> isNoteWithinSensor()))
-				.andThen(() -> {
+				.andThen(new WaitUntilInterrupt(isNoteInShootPosition, (rising, falling) -> {
 					setIntakeSpeed(0);
-				});
+				}, false, true));
 	}
 	
 	/**
