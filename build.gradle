@@ -3,6 +3,13 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2025.1.1-beta-1"
 }
 
+// Needed for YAGSL beta
+repositories {
+	flatDir {
+		dirs './libs'
+	}
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -69,6 +76,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation name: 'YAGSL'
 }
 
 test {
