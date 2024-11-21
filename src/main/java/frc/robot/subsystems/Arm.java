@@ -26,12 +26,14 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.TrapezoidProfileCommand;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.ShootingConstants.ShootingPosition;
@@ -169,6 +171,11 @@ public class Arm extends SubsystemBase {
 		
 		time.reset();
 		time.start();
+		TrapezoidProfile.Constraints constraints = new TrapezoidProfile.Constraints(0.5, 0.5);
+		TrapezoidProfile profile = new TrapezoidProfile(constraints);
+		TrapezoidProfile.State startState = new TrapezoidProfile.State(0, 0);
+		TrapezoidProfile.State endState = new TrapezoidProfile.State(1, 0);
+		armTarget = profile.calculate(5, startState, endState).position;
 	}
 	
 	private ElevatorFeedforward getElevatorFeedforward() {
