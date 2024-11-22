@@ -4,16 +4,19 @@
 
 package frc.robot.subsystems;
 
-import com.revrobotics.CANSparkBase.ControlType;
-import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel.MotorType;
-
-import com.revrobotics.CANSparkMax;
+import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.ClosedLoopConfig;
+import com.revrobotics.spark.config.SparkBaseConfig;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkPIDController;
 
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -27,14 +30,14 @@ import frc.robot.Constants.ShootingConstants.ShootingPosition;
  */
 public class Head extends SubsystemBase {
 	// Shooter
-	private final CANSparkMax shooterMotorBottom = new CANSparkMax(ShooterConstants.MOTOR_BOTTOM_CAN_ID, MotorType.kBrushless);
-	private final CANSparkMax shooterMotorTop = new CANSparkMax(ShooterConstants.MOTOR_TOP_CAN_ID, MotorType.kBrushless);
+	private final SparkMax shooterMotorBottom = new SparkMax(ShooterConstants.MOTOR_BOTTOM_CAN_ID, MotorType.kBrushless);
+	private final SparkMax shooterMotorTop = new SparkMax(ShooterConstants.MOTOR_TOP_CAN_ID, MotorType.kBrushless);
 	private final RelativeEncoder shooterEncoderBottom = shooterMotorBottom.getEncoder();
 	private final RelativeEncoder shooterEncoderTop = shooterMotorTop.getEncoder();
-	private final SparkPIDController shooterControllerBottom = shooterMotorBottom.getPIDController();
-	private final SparkPIDController shooterControllerTop = shooterMotorTop.getPIDController();
+	private final SparkClosedLoopController shooterControllerBottom = shooterMotorBottom.getClosedLoopController();
+	private final SparkClosedLoopController shooterControllerTop = shooterMotorTop.getClosedLoopController();
 	
-	private final CANSparkMax intakeMotor = new CANSparkMax(IntakeConstants.MOTOR_CAN_ID, MotorType.kBrushless);
+	private final SparkMax intakeMotor = new SparkMax(IntakeConstants.MOTOR_CAN_ID, MotorType.kBrushless);
 	/** Sensor to tell whether the note is aligned to shoot. */
 	private final DigitalInput isNoteInShootPosition = new DigitalInput(IntakeConstants.NOTE_SENSOR_DIO);
 	/** Sensor to tell whether the note is in the intake. Used to slow down the intake so the note is aligned correctly. */
@@ -45,42 +48,38 @@ public class Head extends SubsystemBase {
 	
 	/** Creates a new Head. */
 	public Head() {
-		// Shooter motor
-		shooterMotorBottom.restoreFactoryDefaults();
-		shooterMotorTop.restoreFactoryDefaults();
+		// Config shared across all of the motors.
+		SparkBaseConfig sharedMotorConfig = new SparkMaxConfig()
+				.smartCurrentLimit(40);
 		
-		shooterMotorBottom.setIdleMode(IdleMode.kCoast);
-		shooterMotorTop.setIdleMode(IdleMode.kCoast);
+		// Shooter motors
+		SparkBaseConfig shooterMotorConfig = new SparkMaxConfig()
+				.apply(sharedMotorConfig)
+				.idleMode(IdleMode.kCoast);
 		
-		shooterMotorBottom.setInverted(false);
-		shooterMotorTop.setInverted(false);
+		// Shooter controllers
+		ClosedLoopConfig shooterControllerBottomConfig = new ClosedLoopConfig()
+				.p(ShooterConstants.BOTTOM_kP)
+				.i(ShooterConstants.BOTTOM_kI)
+				.d(ShooterConstants.BOTTOM_kD)
+				.outputRange(ShooterConstants.BOTTOM_kMinOutput, ShooterConstants.BOTTOM_kMaxOutput);
 		
-		shooterMotorBottom.setSmartCurrentLimit(40);
-		shooterMotorTop.setSmartCurrentLimit(40);
+		ClosedLoopConfig shooterControllerTopConfig = new ClosedLoopConfig()
+				.p(ShooterConstants.TOP_kP)
+				.i(ShooterConstants.TOP_kI)
+				.d(ShooterConstants.TOP_kD)
+				.outputRange(ShooterConstants.TOP_kMinOutput, ShooterConstants.TOP_kMaxOutput);
+		
+		shooterMotorBottom.configure(shooterMotorConfig.apply(shooterControllerBottomConfig), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+		shooterMotorTop.configure(shooterMotorConfig.apply(shooterControllerTopConfig), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		
 		// Intake motor
-		intakeMotor.restoreFactoryDefaults();
-		intakeMotor.setIdleMode(IdleMode.kBrake);
-		intakeMotor.setInverted(true);
-		intakeMotor.setSmartCurrentLimit(40);
+		SparkBaseConfig intakeMotorConfig = new SparkMaxConfig()
+				.apply(sharedMotorConfig)
+				.idleMode(IdleMode.kBrake)
+				.inverted(true);
 		
-		// Shooter controller
-		shooterControllerBottom.setP(ShooterConstants.BOTTOM_kP);
-		shooterControllerTop.setP(ShooterConstants.TOP_kP);
-		shooterControllerBottom.setI(ShooterConstants.BOTTOM_kI);
-		shooterControllerTop.setI(ShooterConstants.TOP_kI);
-		shooterControllerBottom.setD(ShooterConstants.BOTTOM_kD);
-		shooterControllerTop.setD(ShooterConstants.TOP_kD);
-		shooterControllerBottom.setOutputRange(ShooterConstants.BOTTOM_kMinOutput, ShooterConstants.BOTTOM_kMaxOutput);
-		shooterControllerTop.setOutputRange(ShooterConstants.TOP_kMinOutput, ShooterConstants.TOP_kMaxOutput);
-		
-		// Burn motor controller configuration to flash
-		Timer.delay(0.005);
-		intakeMotor.burnFlash();
-		Timer.delay(0.005);
-		shooterMotorBottom.burnFlash();
-		Timer.delay(0.005);
-		shooterMotorTop.burnFlash();
+		intakeMotor.configure(intakeMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 	}
 	
 	@Override
@@ -340,11 +339,13 @@ public class Head extends SubsystemBase {
 	 */
 	public Command ToggleBreakModes() {
 		return new InstantCommand(() -> {
-			if (intakeMotor.getIdleMode() == IdleMode.kBrake) {
-				intakeMotor.setIdleMode(IdleMode.kCoast);
+			SparkBaseConfig newConfig = new SparkMaxConfig();
+			if (intakeMotor.configAccessor.getIdleMode() == IdleMode.kBrake) {
+				newConfig.idleMode(IdleMode.kCoast);
 			} else {
-				intakeMotor.setIdleMode(IdleMode.kBrake);
+				newConfig.idleMode(IdleMode.kBrake);
 			}
+			intakeMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
 		}).ignoringDisable(true);
 	}
 	
@@ -356,7 +357,9 @@ public class Head extends SubsystemBase {
 	 */
 	public Command EnableBrakeMode() {
 		return new InstantCommand(() -> {
-			intakeMotor.setIdleMode(IdleMode.kBrake);
+			SparkBaseConfig newConfig = new SparkMaxConfig()
+					.idleMode(IdleMode.kBrake);
+			intakeMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
 		});
 	}
 }
