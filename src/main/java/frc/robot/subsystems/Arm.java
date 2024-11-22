@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.AbsoluteEncoderConfig;
 import com.revrobotics.spark.config.ClosedLoopConfig;
+import com.revrobotics.spark.config.SignalsConfig;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
@@ -34,6 +35,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.MotorConstants;
 import frc.robot.Constants.ShootingConstants.ShootingPosition;
 import frc.robot.shuffleboard.MotorTab;
 // import frc.robot.util.TunableNumber;
@@ -87,10 +89,6 @@ public class Arm extends SubsystemBase {
 	
 	/** Creates a new Arm. */
 	public Arm() {
-		// Applied to motors that need slow status updates
-		// TODO: Get this to actually do something
-		SparkBaseConfig slowPeriodicConfig = new SparkMaxConfig();
-		
 		// setup arm motors
 		ClosedLoopConfig armControllerConfig = new ClosedLoopConfig()
 				.p(ArmConstants.KP)
@@ -119,7 +117,7 @@ public class Arm extends SubsystemBase {
 		SparkBaseConfig followerArmMotorConfig = new SparkMaxConfig()
 				.apply(armMotorConfig)
 				.follow(leaderArmMotor, true)
-				.apply(slowPeriodicConfig);
+				.apply(MotorConstants.SLOW_SIGNALS_CONFIG);
 		
 		leaderArmMotor.configure(leaderArmMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		followerArmMotor.configure(followerArmMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -160,7 +158,7 @@ public class Arm extends SubsystemBase {
 		SparkBaseConfig followerElevatorMotorConfig = new SparkMaxConfig()
 				.apply(elevatorMotorConfig)
 				.follow(leaderArmMotor, true)
-				.apply(slowPeriodicConfig);
+				.apply(MotorConstants.SLOW_SIGNALS_CONFIG);
 		
 		leaderElevatorMotor.configure(leaderElevatorMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		followerElevatorMotor.configure(followerElevatorMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
