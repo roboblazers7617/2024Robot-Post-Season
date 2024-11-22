@@ -4,33 +4,32 @@
 
 package frc.robot.subsystems;
 
-import com.revrobotics.CANSparkMax;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkBaseConfig;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class Climber extends SubsystemBase {
-	private final CANSparkMax rightClimber = new CANSparkMax(Constants.ClimberConstants.RIGHT_CLIMBER_PORT, MotorType.kBrushless);
+	private final SparkMax rightClimber = new SparkMax(Constants.ClimberConstants.RIGHT_CLIMBER_PORT, MotorType.kBrushless);
 	private final RelativeEncoder rightClimberEncoder;
 	
-	private final CANSparkMax leftClimber = new CANSparkMax(Constants.ClimberConstants.LEFT_CLIMBER_PORT, MotorType.kBrushless);
+	private final SparkMax leftClimber = new SparkMax(Constants.ClimberConstants.LEFT_CLIMBER_PORT, MotorType.kBrushless);
 	private final RelativeEncoder leftClimberEncoder;
 	
 	/** Creates a new Climber. */
 	public Climber() {
-		rightClimber.restoreFactoryDefaults();
+		SparkBaseConfig motorConfig = new SparkMaxConfig()
+				.idleMode(IdleMode.kBrake);
 		
-		leftClimber.restoreFactoryDefaults();
-		
-		rightClimber.setIdleMode(IdleMode.kBrake);
-		rightClimber.setInverted(true);
-		
-		leftClimber.setIdleMode(IdleMode.kBrake);
+		leftClimber.configure(motorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+		rightClimber.configure(motorConfig.inverted(true), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		
 		leftClimberEncoder = leftClimber.getEncoder();
 		rightClimberEncoder = rightClimber.getEncoder();
@@ -38,16 +37,6 @@ public class Climber extends SubsystemBase {
 		rightClimberEncoder.setPosition(0.0);
 		
 		// balanceController.setSetpoint(0.0);
-		
-		burnFlash();
-	}
-	
-	private void burnFlash() {
-		Timer.delay(0.005);
-		leftClimber.burnFlash();
-		Timer.delay(0.005);
-		rightClimber.burnFlash();
-		Timer.delay(0.005);
 	}
 	
 	public void setSpeed(double leftSpeed, double rightSpeed) {
@@ -88,7 +77,7 @@ public class Climber extends SubsystemBase {
 	@Override
 	public void periodic() {}
 	
-	public CANSparkMax[] getMotors() {
-		return new CANSparkMax[] { leftClimber, rightClimber };
+	public SparkMax[] getMotors() {
+		return new SparkMax[] { leftClimber, rightClimber };
 	}
 }
