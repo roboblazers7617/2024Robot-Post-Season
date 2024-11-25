@@ -23,6 +23,7 @@ import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
@@ -40,6 +41,7 @@ import frc.robot.Constants.ShootingConstants.ShootingPosition;
 import frc.robot.shuffleboard.MotorTab;
 // import frc.robot.util.TunableNumber;
 
+@Logged
 public class Arm extends SubsystemBase {
 	// Arm
 	/** this is the right arm motor */

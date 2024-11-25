@@ -38,6 +38,7 @@ import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -65,6 +66,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
+@Logged
 public class RobotContainer {
 	// The robot's subsystems and commands are defined here...
 	private final ShuffleboardInfo shuffleboard;
