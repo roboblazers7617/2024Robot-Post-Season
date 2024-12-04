@@ -6,6 +6,8 @@ package frc.robot;
 
 import java.util.function.Supplier;
 
+import com.revrobotics.spark.config.SignalsConfig;
+
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -35,6 +37,20 @@ public final class Constants {
 	// public static class TestNumber{
 	// public static int number = 5;
 	// }
+	
+	public static class MotorConstants {
+		/**
+		 * SignalsConfig that can be applied to a SparkMax to slow down its CAN periodic.
+		 */
+		public static final SignalsConfig SLOW_SIGNALS_CONFIG = new SignalsConfig()
+				.appliedOutputPeriodMs(1000) // Period 0
+				.faultsPeriodMs(1000) // Period 1
+				.primaryEncoderPositionPeriodMs(1000) // Period 2
+				.analogVoltagePeriodMs(1000) // Period 3
+				.externalOrAltEncoderPosition(1000) // Period 4
+				.absoluteEncoderPositionPeriodMs(1000) // Period 5
+				.iAccumulationPeriodMs(1000); // Period 7
+	}
 	
 	public static class ShootingConstants {
 		public enum ShootingPosition {
@@ -152,7 +168,6 @@ public final class Constants {
 		public static final double LINEAR_AUTO_KP = 5.7960566071;
 		public static final double LINEAR_AUTO_KI = 0;
 		public static final double LINEAR_AUTO_KD = 0;
-		public static final double MAX_MODULE_SPEED = 15;
 	}
 	
 	public static class SwerveConstants {
