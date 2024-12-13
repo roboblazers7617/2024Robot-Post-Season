@@ -1,6 +1,6 @@
 package frc.robot.shuffleboard;
 
-import com.revrobotics.CANSparkMax;
+import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -20,7 +20,7 @@ public class MotorTab {
 	private final DoublePublisher[] stickyFaultPublisher;
 	private final DoublePublisher[] motorTemperaturePublishers;
 	private final DoublePublisher[] motorEncoderPublishers;
-	private final CANSparkMax[] motors = new CANSparkMax[Constants.NUMBER_OF_MOTORS];
+	private final SparkMax[] motors = new SparkMax[Constants.NUMBER_OF_MOTORS];
 	private int numberOfMotors = 0;
 	private final int totalNumberOfMotors;
 	
@@ -71,7 +71,7 @@ public class MotorTab {
 	 * @param newMotors
 	 *            an array of the new motors to be added
 	 */
-	public void addMotor(CANSparkMax[] newMotors) {
+	public void addMotor(SparkMax[] newMotors) {
 		if (newMotors.length + numberOfMotors > totalNumberOfMotors) {
 			tooManyMotors.setText("Too many motors. Increase Constants.NUMBER_OF_MOTORS to: " + (newMotors.length + numberOfMotors));
 			tooManyMotors.set(true);
@@ -111,7 +111,8 @@ public class MotorTab {
 		for (int i = 0; i < numberOfMotors; i++) {
 			busVoltagePublishers[i].set(motors[i].getBusVoltage());
 			optionCurrentPublishers[i].set(motors[i].getOutputCurrent());
-			stickyFaultPublisher[i].set(motors[i].getStickyFaults());
+			// TODO: Get motor sticky fault publishing working again
+			// stickyFaultPublisher[i].set(motors[i].getStickyFaults());
 			motorTemperaturePublishers[i].set(motors[i].getMotorTemperature());
 			motorEncoderPublishers[i].set(motors[i].getEncoder().getPosition());
 		}

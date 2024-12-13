@@ -7,11 +7,12 @@ package frc.robot.subsystems;
 import frc.robot.util.LimelightHelpers;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
-import com.pathplanner.lib.util.PIDConstants;
-import com.pathplanner.lib.util.ReplanningConfig;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -96,31 +97,48 @@ public class Drivetrain extends SubsystemBase {
 	 * Setup AutoBuilder for PathPlanner.
 	 */
 	public void setupPathPlanner() {
-		AutoBuilder.configureHolonomic(this::getPose, // Robot pose supplier
-				this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
-				this::getRobotVelocity, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-				this::setChassisSpeeds, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
-				new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your
-													// Constants class
-						new PIDConstants(Constants.AutoConstants.LINEAR_AUTO_KP, Constants.AutoConstants.LINEAR_AUTO_KI, Constants.AutoConstants.LINEAR_AUTO_KD),
-						// Translation PID constants
-						new PIDConstants(swerveDrive.swerveController.config.headingPIDF.p, swerveDrive.swerveController.config.headingPIDF.i, swerveDrive.swerveController.config.headingPIDF.d),
-						// Rotation PID constants
-						Constants.AutoConstants.MAX_MODULE_SPEED,
-						// Max module speed, in m/s
-						swerveDrive.swerveDriveConfiguration.getDriveBaseRadiusMeters(),
-						// Drive base radius in meters. Distance from robot center to furthest module.
-						new ReplanningConfig()
-				// Default path replanning config. See the API for the options here
-				), () -> {
-					// Boolean supplier that controls when the path will be mirrored for the red
-					// alliance
+		// Load the RobotConfig from the GUI settings. You should probably
+		// store this in your Constants file
+		RobotConfig config;
+		try {
+			// TODO: Replace placeholder values in settings file
+			config = RobotConfig.fromGUISettings();
+			
+			// Configure AutoBuilder last
+			AutoBuilder.configure(
+					// Robot pose supplier
+					this::getPose,
+					// Method to reset odometry (will be called if your auto has a starting pose)
+					this::resetOdometry,
+					// ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+					this::getRobotVelocity,
+					// Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+					this::setChassisSpeeds,
+					// PPHolonomicController is the built in path following controller for holonomic drive trains
+					new PPHolonomicDriveController(
+							// Translation PID constants
+							new PIDConstants(Constants.AutoConstants.LINEAR_AUTO_KP, Constants.AutoConstants.LINEAR_AUTO_KI, Constants.AutoConstants.LINEAR_AUTO_KD),
+							// Rotation PID constants
+							new PIDConstants(swerveDrive.swerveController.config.headingPIDF.p, swerveDrive.swerveController.config.headingPIDF.i, swerveDrive.swerveController.config.headingPIDF.d)),
+					// The robot configuration
+					config,
+					// Boolean supplier that controls when the path will be mirrored for the red alliance
 					// This will flip the path being followed to the red side of the field.
 					// THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-					var alliance = DriverStation.getAlliance();
-					return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
-				}, this // Reference to this subsystem to set requirements
-		);
+					() -> {
+						var alliance = DriverStation.getAlliance();
+						return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+					},
+					// Reference to this subsystem to set requirements
+					this);
+		} catch (Exception e) {
+			// Handle exception as needed
+			e.printStackTrace();
+		}
+		
+		// Preload PathPlanner Path finding
+		// IF USING CUSTOM PATHFINDER ADD BEFORE THIS LINE
+		PathfindingCommand.warmupCommand().schedule();
 	}
 	
 	/**
@@ -133,21 +151,25 @@ public class Drivetrain extends SubsystemBase {
 	 * @return {@link AutoBuilder#followPath(PathPlannerPath)} path command.
 	 */
 	public Command getAutonomousCommand(String pathName, boolean setOdomToStart) {
-		// Load the path you want to follow using its name in the GUI
-		PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
-		
-		if (setOdomToStart) {
-			resetOdometry(new Pose2d(path.getPoint(0).position, getHeading()));
+		try {
+			// Load the path you want to follow using its name in the GUI
+			PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+			
+			if (setOdomToStart) {
+				resetOdometry(new Pose2d(path.getPoint(0).position, getHeading()));
+			}
+			
+			// Create a path following command using AutoBuilder. This will also trigger event markers.
+			return AutoBuilder.followPath(path);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Commands.none();
 		}
-		
-		// Create a path following command using AutoBuilder. This will also trigger
-		// event markers.
-		return AutoBuilder.followPath(path);
 	}
 	
 	public Command driveToPose(Pose2d pose) {
 		PathConstraints constraints = new PathConstraints(swerveDrive.getMaximumVelocity(), 4.0, swerveDrive.getMaximumAngularVelocity(), Units.degreesToRadians(720));
-		return AutoBuilder.pathfindToPose(pose, constraints, 0.0, 0.0);
+		return AutoBuilder.pathfindToPose(pose, constraints, 0.0);
 	}
 	
 	/**

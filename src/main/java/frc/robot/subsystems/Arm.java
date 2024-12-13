@@ -4,16 +4,24 @@
 
 package frc.robot.subsystems;
 
-import com.revrobotics.CANSparkLowLevel.MotorType;
-import com.revrobotics.SparkPIDController.ArbFFUnits;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.AbsoluteEncoderConfig;
+import com.revrobotics.spark.config.ClosedLoopConfig;
+import com.revrobotics.spark.config.SignalsConfig;
+import com.revrobotics.spark.config.SparkBaseConfig;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
 
 import java.util.function.Supplier;
 
-import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkAbsoluteEncoder;
-import com.revrobotics.SparkPIDController;
-import com.revrobotics.CANSparkBase.IdleMode;
+import com.revrobotics.spark.SparkAbsoluteEncoder;
+import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
@@ -27,6 +35,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.MotorConstants;
 import frc.robot.Constants.ShootingConstants.ShootingPosition;
 import frc.robot.shuffleboard.MotorTab;
 // import frc.robot.util.TunableNumber;
@@ -34,13 +43,11 @@ import frc.robot.shuffleboard.MotorTab;
 public class Arm extends SubsystemBase {
 	// Arm
 	/** this is the right arm motor */
-	private final CANSparkMax leaderArmMotor = new CANSparkMax(ArmConstants.LEFT_MOTOR_ID, MotorType.kBrushless);
-	private final CANSparkMax followerArmMotor = new CANSparkMax(ArmConstants.RIGHT_MOTOR_ID, MotorType.kBrushless);
+	private final SparkMax leaderArmMotor = new SparkMax(ArmConstants.LEFT_MOTOR_ID, MotorType.kBrushless);
+	private final SparkMax followerArmMotor = new SparkMax(ArmConstants.RIGHT_MOTOR_ID, MotorType.kBrushless);
 	
-	private final SparkAbsoluteEncoder armAbsoluteEncoder = leaderArmMotor
-			.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle);
-	
-	private final SparkPIDController armPIDController = leaderArmMotor.getPIDController();
+	private final SparkAbsoluteEncoder armAbsoluteEncoder = leaderArmMotor.getAbsoluteEncoder();
+	private final SparkClosedLoopController armPIDController = leaderArmMotor.getClosedLoopController();
 	
 	private ArmFeedforward extendedArmFeedForward = new ArmFeedforward(ArmConstants.EXTENDED_KS, ArmConstants.EXTENDED_KG, ArmConstants.EXTENDED_KV);
 	private ArmFeedforward retractedArmFeedForward = new ArmFeedforward(ArmConstants.RETRACTED_KS, ArmConstants.RETRACTED_KG, ArmConstants.RETRACTED_KV);
@@ -56,13 +63,12 @@ public class Arm extends SubsystemBase {
 	
 	// Elevator
 	/** the right motor */
-	private final CANSparkMax leaderElevatorMotor = new CANSparkMax(ElevatorConstants.RIGHT_MOTOR_ID, MotorType.kBrushless);
+	private final SparkMax leaderElevatorMotor = new SparkMax(ElevatorConstants.RIGHT_MOTOR_ID, MotorType.kBrushless);
 	/** the left motor */
-	private final CANSparkMax followerElevatorMotor = new CANSparkMax(ElevatorConstants.LEFT_MOTOR_ID, MotorType.kBrushless);
+	private final SparkMax followerElevatorMotor = new SparkMax(ElevatorConstants.LEFT_MOTOR_ID, MotorType.kBrushless);
 	
 	private final RelativeEncoder elevatorEncoder = leaderElevatorMotor.getEncoder();
-	
-	private final SparkPIDController elevatorPIDController = leaderElevatorMotor.getPIDController();
+	private final SparkClosedLoopController elevatorPIDController = leaderElevatorMotor.getClosedLoopController();
 	
 	InterpolatingDoubleTreeMap elevatorKSTable = new InterpolatingDoubleTreeMap();
 	InterpolatingDoubleTreeMap elevatorKGTable = new InterpolatingDoubleTreeMap();
@@ -84,39 +90,37 @@ public class Arm extends SubsystemBase {
 	/** Creates a new Arm. */
 	public Arm() {
 		// setup arm motors
+		ClosedLoopConfig armControllerConfig = new ClosedLoopConfig()
+				.p(ArmConstants.KP)
+				.i(ArmConstants.KI)
+				.d(ArmConstants.KD)
+				.outputRange(ArmConstants.kMinOutput, ArmConstants.kMaxOutput)
+				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+				.positionWrappingEnabled(false);
 		
-		leaderArmMotor.restoreFactoryDefaults();
-		leaderArmMotor.setIdleMode(IdleMode.kBrake);
-		leaderArmMotor.setSmartCurrentLimit(ArmConstants.MAX_AMPERAGE);
-		leaderArmMotor.setInverted(true);
+		AbsoluteEncoderConfig armAbsoluteEncoderConfig = new AbsoluteEncoderConfig()
+				.positionConversionFactor(ArmConstants.ABS_POSITION_CONVERSION_FACTOR)
+				.velocityConversionFactor(ArmConstants.ABS_VELOCITY_CONVERSION_FACTOR)
+				.inverted(true)
+				.zeroOffset(ArmConstants.ARM_OFFSET);
 		
-		followerArmMotor.restoreFactoryDefaults();
-		followerArmMotor.setIdleMode(IdleMode.kBrake);
-		followerArmMotor.setSmartCurrentLimit(ArmConstants.MAX_AMPERAGE);
-		followerArmMotor.follow(leaderArmMotor, true);
+		SparkBaseConfig armMotorConfig = new SparkMaxConfig()
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(ArmConstants.MAX_AMPERAGE);
 		
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus0, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus1, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus3, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus4, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus5, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus6, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus7, 1000);
-		followerArmMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus2, 1000);
+		SparkBaseConfig leaderArmMotorConfig = new SparkMaxConfig()
+				.apply(armMotorConfig)
+				.inverted(true)
+				.apply(armControllerConfig)
+				.apply(armAbsoluteEncoderConfig);
 		
-		// setup the arm pid controller
-		armPIDController.setP(ArmConstants.KP);
-		armPIDController.setI(ArmConstants.KI);
-		armPIDController.setD(ArmConstants.KD);
-		armPIDController.setOutputRange(ArmConstants.kMinOutput, ArmConstants.kMaxOutput);
-		armPIDController.setFeedbackDevice(armAbsoluteEncoder);
-		armPIDController.setPositionPIDWrappingEnabled(false);
+		SparkBaseConfig followerArmMotorConfig = new SparkMaxConfig()
+				.apply(armMotorConfig)
+				.follow(leaderArmMotor, true)
+				.apply(MotorConstants.SLOW_SIGNALS_CONFIG);
 		
-		// setup the arm encoder
-		armAbsoluteEncoder.setPositionConversionFactor(ArmConstants.ABS_POSITION_CONVERSION_FACTOR);
-		armAbsoluteEncoder.setVelocityConversionFactor(ArmConstants.ABS_VELOCITY_CONVERSION_FACTOR);
-		armAbsoluteEncoder.setInverted(true);
-		armAbsoluteEncoder.setZeroOffset(ArmConstants.ARM_OFFSET);
+		leaderArmMotor.configure(leaderArmMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+		followerArmMotor.configure(followerArmMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		
 		armTarget = armAbsoluteEncoder.getPosition();
 		
@@ -136,48 +140,33 @@ public class Arm extends SubsystemBase {
 		armAngleBasedOnDistanceRetracted.put(4.29, 38.3);
 		armAngleBasedOnDistanceRetracted.put(4.31, 37.6);
 		
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus0, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus1, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus3, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus4, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus5, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus6, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus7, 1000);
-		followerElevatorMotor.setPeriodicFramePeriod(CANSparkMax.PeriodicFrame.kStatus2, 1000);
 		// setup elevator motors
-		leaderElevatorMotor.restoreFactoryDefaults();
-		leaderElevatorMotor.setIdleMode(IdleMode.kBrake);
-		leaderElevatorMotor.setSmartCurrentLimit(ElevatorConstants.MAX_AMPERAGE);
-		leaderElevatorMotor.setInverted(true);
+		ClosedLoopConfig elevatorControllerConfig = new ClosedLoopConfig()
+				.p(ElevatorConstants.KP)
+				.i(ElevatorConstants.KI)
+				.d(ElevatorConstants.KD)
+				.outputRange(ElevatorConstants.kMinOutput, ElevatorConstants.kMaxOutput);
 		
-		followerElevatorMotor.restoreFactoryDefaults();
-		followerElevatorMotor.setIdleMode(IdleMode.kBrake);
-		followerElevatorMotor.setSmartCurrentLimit(ElevatorConstants.MAX_AMPERAGE);
-		followerElevatorMotor.follow(leaderArmMotor, true);
+		SparkBaseConfig elevatorMotorConfig = new SparkMaxConfig()
+				.smartCurrentLimit(ElevatorConstants.MAX_AMPERAGE)
+				.idleMode(IdleMode.kBrake);
+		
+		SparkBaseConfig leaderElevatorMotorConfig = new SparkMaxConfig()
+				.apply(elevatorMotorConfig)
+				.inverted(true);
+		
+		SparkBaseConfig followerElevatorMotorConfig = new SparkMaxConfig()
+				.apply(elevatorMotorConfig)
+				.follow(leaderArmMotor, true)
+				.apply(MotorConstants.SLOW_SIGNALS_CONFIG);
+		
+		leaderElevatorMotor.configure(leaderElevatorMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+		followerElevatorMotor.configure(followerElevatorMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 		
 		elevatorTarget = elevatorEncoder.getPosition();
 		
-		elevatorPIDController.setP(ElevatorConstants.KP);
-		elevatorPIDController.setI(ElevatorConstants.KI);
-		elevatorPIDController.setD(ElevatorConstants.KD);
-		elevatorPIDController.setOutputRange(ElevatorConstants.kMinOutput, ElevatorConstants.kMaxOutput);
-		
 		time.reset();
 		time.start();
-		
-		burnFlash();
-	}
-	
-	private void burnFlash() {
-		Timer.delay(0.005);
-		leaderArmMotor.burnFlash();
-		Timer.delay(0.005);
-		followerArmMotor.burnFlash();
-		Timer.delay(0.005);
-		leaderElevatorMotor.burnFlash();
-		Timer.delay(0.005);
-		followerElevatorMotor.burnFlash();
-		Timer.delay(0.005);
 	}
 	
 	private ElevatorFeedforward getElevatorFeedforward() {
@@ -316,29 +305,34 @@ public class Arm extends SubsystemBase {
 	
 	public Command ToggleBrakeModes() {
 		return this.runOnce(() -> {
-			if (leaderArmMotor.getIdleMode() == IdleMode.kBrake) {
-				leaderArmMotor.setIdleMode(IdleMode.kCoast);
-				followerArmMotor.setIdleMode(IdleMode.kCoast);
+			SparkBaseConfig newArmConfig = new SparkMaxConfig();
+			if (leaderArmMotor.configAccessor.getIdleMode() == IdleMode.kBrake) {
+				newArmConfig.idleMode(IdleMode.kCoast);
 			} else {
-				leaderArmMotor.setIdleMode(IdleMode.kBrake);
-				followerArmMotor.setIdleMode(IdleMode.kBrake);
+				newArmConfig.idleMode(IdleMode.kBrake);
 			}
-			if (leaderElevatorMotor.getIdleMode() == IdleMode.kBrake) {
-				leaderElevatorMotor.setIdleMode(IdleMode.kCoast);
-				followerElevatorMotor.setIdleMode(IdleMode.kCoast);
+			leaderArmMotor.configure(newArmConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			followerArmMotor.configure(newArmConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			
+			SparkBaseConfig newElevatorConfig = new SparkMaxConfig();
+			if (leaderElevatorMotor.configAccessor.getIdleMode() == IdleMode.kBrake) {
+				newElevatorConfig.idleMode(IdleMode.kCoast);
 			} else {
-				leaderElevatorMotor.setIdleMode(IdleMode.kBrake);
-				followerElevatorMotor.setIdleMode(IdleMode.kBrake);
+				newElevatorConfig.idleMode(IdleMode.kBrake);
 			}
+			leaderElevatorMotor.configure(newElevatorConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			followerElevatorMotor.configure(newElevatorConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
 		}).ignoringDisable(true);
 	}
 	
 	public Command EnableBrakeMode() {
 		return this.runOnce(() -> {
-			leaderArmMotor.setIdleMode(IdleMode.kBrake);
-			followerArmMotor.setIdleMode(IdleMode.kBrake);
-			leaderElevatorMotor.setIdleMode(IdleMode.kBrake);
-			followerElevatorMotor.setIdleMode(IdleMode.kBrake);
+			SparkBaseConfig newConfig = new SparkMaxConfig()
+					.idleMode(IdleMode.kBrake);
+			leaderArmMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			followerArmMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			leaderElevatorMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+			followerElevatorMotor.configure(newConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
 		}).ignoringDisable(true);
 	}
 	
@@ -368,7 +362,7 @@ public class Arm extends SubsystemBase {
 			double armFeedFowardValue = armFeedFoward.calculate(Units.degreesToRadians(currentArmTarget), velocity);
 			// System.out.println("arm feed foward: " + armFeedFowardValue);
 			
-			armPIDController.setReference(currentArmTarget, CANSparkMax.ControlType.kPosition, 0, armFeedFowardValue, ArbFFUnits.kVoltage);
+			armPIDController.setReference(currentArmTarget, SparkMax.ControlType.kPosition, 0, armFeedFowardValue, ArbFFUnits.kVoltage);
 			lastAcutalArmTarget = currentArmTarget;
 		}
 		if (!ElevatorConstants.KILL_IT_ALL) {
@@ -384,7 +378,7 @@ public class Arm extends SubsystemBase {
 			
 			if (currentElevatorTarget != lastAcutalElevatorTarget) {
 				double elevatorFeedFowardValue = getElevatorFeedforward().calculate(elevatorEncoder.getVelocity());
-				elevatorPIDController.setReference(currentElevatorTarget, CANSparkMax.ControlType.kPosition, 0, elevatorFeedFowardValue, ArbFFUnits.kVoltage);
+				elevatorPIDController.setReference(currentElevatorTarget, SparkMax.ControlType.kPosition, 0, elevatorFeedFowardValue, ArbFFUnits.kVoltage);
 				lastAcutalElevatorTarget = currentElevatorTarget;
 			}
 			
