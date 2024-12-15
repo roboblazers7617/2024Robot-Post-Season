@@ -110,5 +110,6 @@ tasks.withType(Javadoc) {
 		"https://codedocs.revrobotics.com/java",
 		"https://api.ctr-electronics.com/phoenix/release/java",
 		"https://api.ctr-electronics.com/phoenix6/release/java",
+		"https://roboblazers7617.github.io/ButtonBoxLib",
 	])
 }

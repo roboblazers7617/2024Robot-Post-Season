@@ -14,6 +14,11 @@ import frc.robot.subsystems.LED;
 import frc.robot.subsystems.Head;
 import frc.robot.shuffleboard.ArmTab;
 
+import io.github.roboblazers7617.buttonbox.ButtonBoxServer;
+import io.github.roboblazers7617.buttonbox.controls.Button;
+import io.github.roboblazers7617.buttonbox.controls.Button.ButtonMode;
+import io.github.roboblazers7617.buttonbox.controls.TestControl;
+
 import frc.robot.shuffleboard.ClimberTab;
 import frc.robot.shuffleboard.DriverStationTab;
 import frc.robot.shuffleboard.LEDTab;
@@ -82,6 +87,8 @@ public class RobotContainer {
 	private final HapticController driverHapticController = new HapticController(driverController);
 	private final HapticController operatorHapticController = new HapticController(operatorController);
 	
+	private final ButtonBoxServer buttonBox = new ButtonBoxServer();
+	
 	private final MechanismCommands mechanismCommands = new MechanismCommands(arm, head, driverHapticController, operatorHapticController);
 	
 	private double speedMultiplier = SwerveConstants.REGULAR_SPEED;
@@ -122,6 +129,7 @@ public class RobotContainer {
 		configureDefaultCommands();
 		configureDriverBindings();
 		configureOperatorBindings();
+		configureButtonBox();
 		
 		// Set up shuffleboard
 		shuffleboard = ShuffleboardInfo.getInstance();
@@ -281,6 +289,33 @@ public class RobotContainer {
 				.onTrue(Commands.runOnce(() -> {
 					isClimbMode = !isClimbMode;
 				}));
+	}
+	
+	private void configureButtonBox() {
+		buttonBox.addControl(new TestControl("Test Control"));
+		
+		Button testButton = new Button("Test Button");
+		testButton.setMode(ButtonMode.TOGGLE_RISING);
+		buttonBox.addControl(testButton);
+		testButton.getTrigger().onTrue(Commands.runOnce(() -> {
+			System.out.println("Button pressed!");
+		}));
+		
+		Button shootButton = new Button("Shoot Button");
+		buttonBox.addControl(shootButton);
+		shootButton.getTrigger().onTrue(mechanismCommands.Shoot());
+		
+		Button intakeButtonGround = new Button("Intake Button Ground");
+		buttonBox.addControl(intakeButtonGround);
+		intakeButtonGround.getTrigger().onTrue(mechanismCommands.IntakeGround());
+		
+		Button intakeButtonSource = new Button("Intake Button Source");
+		buttonBox.addControl(intakeButtonSource);
+		intakeButtonSource.getTrigger().onTrue(mechanismCommands.IntakeSource());
+		
+		Button outakeButton = new Button("Outake Button");
+		buttonBox.addControl(outakeButton);
+		outakeButton.getTrigger().onTrue(head.OutakePiece());
 	}
 	
 	public String outputValues(Supplier<Double> distance, Supplier<Double> armAngle) {
