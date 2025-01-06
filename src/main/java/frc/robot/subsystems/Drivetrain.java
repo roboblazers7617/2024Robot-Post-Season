@@ -168,7 +168,7 @@ public class Drivetrain extends SubsystemBase {
 	}
 	
 	public Command driveToPose(Pose2d pose) {
-		PathConstraints constraints = new PathConstraints(swerveDrive.getMaximumVelocity(), 4.0, swerveDrive.getMaximumAngularVelocity(), Units.degreesToRadians(720));
+		PathConstraints constraints = new PathConstraints(swerveDrive.getMaximumChassisVelocity(), 4.0, swerveDrive.getMaximumChassisAngularVelocity(), Units.degreesToRadians(720));
 		return AutoBuilder.pathfindToPose(pose, constraints, 0.0);
 	}
 	
@@ -190,7 +190,7 @@ public class Drivetrain extends SubsystemBase {
 			double xInput = translationX.getAsDouble();
 			double yInput = translationY.getAsDouble();
 			// Make the robot move
-			driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, headingX.getAsDouble(), headingY.getAsDouble(), swerveDrive.getOdometryHeading().getRadians(), swerveDrive.getMaximumVelocity()));
+			driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, headingX.getAsDouble(), headingY.getAsDouble(), swerveDrive.getOdometryHeading().getRadians(), swerveDrive.getMaximumChassisVelocity()));
 		});
 	}
 	
@@ -208,7 +208,7 @@ public class Drivetrain extends SubsystemBase {
 	public Command simDriveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier rotation) {
 		return run(() -> {
 			// Make the robot move
-			driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(translationX.getAsDouble(), translationY.getAsDouble(), rotation.getAsDouble() * Math.PI, swerveDrive.getOdometryHeading().getRadians(), swerveDrive.getMaximumVelocity()));
+			driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(translationX.getAsDouble(), translationY.getAsDouble(), rotation.getAsDouble() * Math.PI, swerveDrive.getOdometryHeading().getRadians(), swerveDrive.getMaximumChassisVelocity()));
 		});
 	}
 	
@@ -225,7 +225,7 @@ public class Drivetrain extends SubsystemBase {
 	 */
 	public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX) {
 		return run(() -> {
-			swerveDrive.drive(new Translation2d(translationX.getAsDouble() * swerveDrive.getMaximumVelocity(), translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), angularRotationX.getAsDouble() * swerveDrive.getMaximumAngularVelocity(), true, false);
+			swerveDrive.drive(new Translation2d(translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(), translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(), true, false);
 		}).finallyDo(() -> {
 			swerveDrive.swerveController.lastAngleScalar = getHeading().getRadians();
 		});
@@ -416,7 +416,7 @@ public class Drivetrain extends SubsystemBase {
 	 * @return {@link ChassisSpeeds} which can be sent to th Swerve Drive.
 	 */
 	public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, double headingX, double headingY) {
-		return swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, headingX, headingY, getHeading().getRadians(), swerveDrive.getMaximumVelocity());
+		return swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, headingX, headingY, getHeading().getRadians(), swerveDrive.getMaximumChassisVelocity());
 	}
 	
 	/**
@@ -434,9 +434,9 @@ public class Drivetrain extends SubsystemBase {
 	}
 	
 	public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, double thetaInput) {
-		xInput = xInput * swerveDrive.getMaximumVelocity();
-		yInput = yInput * swerveDrive.getMaximumVelocity();
-		thetaInput = Math.pow(thetaInput, 3) * swerveDrive.getMaximumAngularVelocity();
+		xInput = xInput * swerveDrive.getMaximumChassisVelocity();
+		yInput = yInput * swerveDrive.getMaximumChassisVelocity();
+		thetaInput = Math.pow(thetaInput, 3) * swerveDrive.getMaximumChassisAngularVelocity();
 		
 		return swerveDrive.swerveController.getRawTargetSpeeds(xInput, yInput, thetaInput);
 	}
@@ -454,7 +454,7 @@ public class Drivetrain extends SubsystemBase {
 	 * @return {@link ChassisSpeeds} which can be sent to th Swerve Drive.
 	 */
 	public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle) {
-		return swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, angle.getRadians(), getHeading().getRadians(), swerveDrive.getMaximumVelocity());
+		return swerveDrive.swerveController.getTargetSpeeds(xInput, yInput, angle.getRadians(), getHeading().getRadians(), swerveDrive.getMaximumChassisVelocity());
 	}
 	
 	/**
@@ -485,7 +485,7 @@ public class Drivetrain extends SubsystemBase {
 	}
 	
 	public double getMaximumVelocity() {
-		return swerveDrive.getMaximumVelocity();
+		return swerveDrive.getMaximumChassisVelocity();
 	}
 	
 	/**
