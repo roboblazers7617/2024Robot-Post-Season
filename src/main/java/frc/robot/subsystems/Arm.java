@@ -19,6 +19,7 @@ import com.revrobotics.spark.SparkBase.ResetMode;
 import java.util.function.Supplier;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -362,7 +363,7 @@ public class Arm extends SubsystemBase {
 			double armFeedFowardValue = armFeedFoward.calculate(Units.degreesToRadians(currentArmTarget), velocity);
 			// System.out.println("arm feed foward: " + armFeedFowardValue);
 			
-			armPIDController.setReference(currentArmTarget, SparkMax.ControlType.kPosition, 0, armFeedFowardValue, ArbFFUnits.kVoltage);
+			armPIDController.setReference(currentArmTarget, SparkMax.ControlType.kPosition, ClosedLoopSlot.kSlot0, armFeedFowardValue, ArbFFUnits.kVoltage);
 			lastAcutalArmTarget = currentArmTarget;
 		}
 		if (!ElevatorConstants.KILL_IT_ALL) {
@@ -378,7 +379,7 @@ public class Arm extends SubsystemBase {
 			
 			if (currentElevatorTarget != lastAcutalElevatorTarget) {
 				double elevatorFeedFowardValue = getElevatorFeedforward().calculate(elevatorEncoder.getVelocity());
-				elevatorPIDController.setReference(currentElevatorTarget, SparkMax.ControlType.kPosition, 0, elevatorFeedFowardValue, ArbFFUnits.kVoltage);
+				elevatorPIDController.setReference(currentElevatorTarget, SparkMax.ControlType.kPosition, ClosedLoopSlot.kSlot0, elevatorFeedFowardValue, ArbFFUnits.kVoltage);
 				lastAcutalElevatorTarget = currentElevatorTarget;
 			}
 			
